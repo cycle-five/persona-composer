@@ -1,0 +1,35 @@
+{
+  "name": "persona-composer",
+  "version": "0.1.0",
+  "description": "Compose social-media posts in the voice of AI personas, backed by SillyTavern character cards and any OpenAI-compatible LLM.",
+  "license": "MIT",
+  "author": "Cycle Five",
+  "type": "commonjs",
+  "main": "dist/plugin.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -p tsconfig.json --watch",
+    "dev": "tsc -p tsconfig.json && node dist/server.js",
+    "start": "node dist/server.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "sillytavern",
+    "persona",
+    "social-media",
+    "llm",
+    "openai-compatible"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2"
+  }
+}
