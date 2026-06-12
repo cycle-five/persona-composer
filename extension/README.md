@@ -80,10 +80,30 @@ Then in your browser:
 - ⚠️ This submits on your behalf, which is squarely against X/IG terms and
   carries real account risk. Leave it off unless you understand the trade-off.
 
+## Selector smoke test
+
+Site DOMs drift; this is the fast way to check whether the adapters still work
+**without** loading the extension. It's built from the real adapters, so a pass
+means the extension's extraction works on the current DOM.
+
+1. `npm run build:ext` (produces `extension/dist/smoke.js`).
+2. Open x.com or instagram.com, scroll a few posts into view.
+3. Open the devtools console, paste the entire contents of
+   `extension/dist/smoke.js`, and run it.
+
+It prints how many posts it found and extracted, a sample table
+(handle / author / text / url / mount point), and a healthy/needs-attention
+verdict. Re-run anytime with `__pcSmoke()`. To also test dropping text into an
+**open** reply/comment box, run `__pcSmoke({ testInsert: true })` (it inserts a
+marker you then clear).
+
+If the verdict is ✗, patch the selectors in `src/sites/<site>.ts` and rebuild.
+
 ## Manual test checklist
 
-The bundles are typechecked and the host→adapter routing is unit-tested, but the
-DOM coupling can only be exercised live:
+The bundles are typechecked, the host→adapter routing is unit-tested, and the
+smoke test exercises real extraction, but live insertion/submit can only be
+checked in-browser:
 
 - [ ] Popup **Test** reports `✓ reachable — N persona(s)`.
 - [ ] 🎭 buttons appear on tweets and IG posts, including ones loaded by scrolling.
