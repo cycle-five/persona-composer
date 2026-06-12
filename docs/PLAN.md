@@ -72,8 +72,8 @@ auto-posting yet.
 Delivered (see [../extension/README.md](../extension/README.md)):
 
 - A Manifest V3 extension whose content script injects a 🎭 button on every tweet
-  and extracts the post (author, handle, text, permalink) from the X DOM
-  (`extension/src/extract.ts`, the only X-coupled module).
+  and extracts the post (author, handle, text, permalink) from the X DOM (the
+  X-coupled selectors, later moved into `extension/src/sites/x.ts` in Phase 3).
 - A shadow-DOM panel (persona picker, platform, source preview, streamed +
   editable draft, char counter, **Copy** / **Insert**). Nothing is auto-posted.
 - A settings popup for the endpoint base URL with a connection **Test**.
