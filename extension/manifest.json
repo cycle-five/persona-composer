@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Persona Composer",
+  "version": "0.1.0",
+  "description": "Compose X replies in the voice of your personas, via your local persona-composer endpoints. Drafts only — you still hit Post.",
+  "permissions": ["storage"],
+  "host_permissions": ["http://127.0.0.1/*", "http://localhost/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Persona Composer settings",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://x.com/*", "https://twitter.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

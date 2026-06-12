@@ -64,18 +64,24 @@ A standalone dev server (`src/server.ts`) runs the identical routes without ST.
 
 ---
 
-## Phase 2 — thin MV3 browser extension  (next)
+## Phase 2 — thin MV3 browser extension  ✅ (`extension/`)
 
 **Risk: against the letter of X/IG terms** (reading page DOM). Local-only, no
 auto-posting yet.
 
-- A Manifest V3 browser extension with a content script that extracts the post
-  the user is looking at (author, text) from the X DOM.
-- A small popup / inline button: "compose reply with persona X".
-- The extension calls the **same** `127.0.0.1` plugin endpoints from Phase 1 and
-  drops the streamed draft into the reply box (the user still hits Post).
-- Reuses `promptAssembly` and the gateway untouched — the extension only adds a
-  DOM-extraction front-end.
+Delivered (see [../extension/README.md](../extension/README.md)):
+
+- A Manifest V3 extension whose content script injects a 🎭 button on every tweet
+  and extracts the post (author, handle, text, permalink) from the X DOM
+  (`extension/src/extract.ts`, the only X-coupled module).
+- A shadow-DOM panel (persona picker, platform, source preview, streamed +
+  editable draft, char counter, **Copy** / **Insert**). Nothing is auto-posted.
+- A settings popup for the endpoint base URL with a connection **Test**.
+- All network I/O runs in the background service worker under `host_permissions`,
+  calling the **same** `/personas` and `/compose` endpoints from Phase 1 — the
+  server is reused **untouched**, prompt assembly stays server-side, so the
+  whole gateway and `promptAssembly` are shared verbatim.
+- Built with esbuild (`npm run build:ext` → `extension/dist/`, loaded unpacked).
 
 ---
 

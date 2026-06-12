@@ -182,6 +182,17 @@ npm run dev         # build + start standalone
 
 ---
 
+## Browser extension (Phase 2)
+
+A thin Manifest V3 extension adds a 🎭 button to tweets on x.com; it extracts the
+post and drafts a persona-voiced reply by calling the **same** local endpoints —
+no server changes. It only drafts; you still hit Post. Build with
+`npm run build:ext` and load `extension/dist` unpacked. Full instructions and the
+account-safety note in [extension/README.md](extension/README.md).
+
+> ⚠️ Phase 2 reads the X page DOM, which is against the *letter* of X's terms.
+> Phase 1 (above) stays clean. See [docs/PLAN.md](docs/PLAN.md).
+
 ## Contributing
 
 Changes flow through a lightweight branch → PR → squash-merge cadence. See
