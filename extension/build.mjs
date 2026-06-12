@@ -46,13 +46,29 @@ async function copyStatics() {
 await rm(outdir, { recursive: true, force: true });
 await mkdir(outdir, { recursive: true });
 
+// The selector smoke test is a standalone console-pasteable script (not loaded
+// by the extension). Built without a sourcemap so the paste stays clean.
+async function buildSmoke() {
+  await esbuild.build({
+    entryPoints: { smoke: path.join(here, "src/smoke.ts") },
+    outdir,
+    bundle: true,
+    format: "iife",
+    target: ["chrome111"],
+    sourcemap: false,
+    logLevel: "info",
+  });
+}
+
 if (watch) {
   const ctx = await esbuild.context(buildOptions);
   await ctx.watch();
+  await buildSmoke();
   await copyStatics();
-  console.log("[persona-composer/ext] watching… (statics copied once)");
+  console.log("[persona-composer/ext] watching… (smoke + statics built once)");
 } else {
   await esbuild.build(buildOptions);
+  await buildSmoke();
   await copyStatics();
   console.log(`[persona-composer/ext] built → ${path.relative(process.cwd(), outdir)}`);
 }
