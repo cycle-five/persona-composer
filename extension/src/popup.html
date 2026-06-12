@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <h1>🎭 persona composer</h1>
+    <p class="hint">
+      Endpoint of your running persona-composer (standalone server or the
+      SillyTavern plugin).
+    </p>
+
+    <label for="baseUrl">Endpoint base URL</label>
+    <input id="baseUrl" type="text" spellcheck="false" placeholder="http://127.0.0.1:5859" />
+
+    <div class="actions">
+      <button id="save" class="primary">Save</button>
+      <button id="test" class="ghost">Test</button>
+    </div>
+    <p id="status" class="status"></p>
+
+    <p class="note">
+      Phase 2 reads the X page DOM, which is against the letter of X's terms.
+      Drafts only — nothing is posted for you.
+    </p>
+    <script src="popup.js"></script>
+  </body>
+</html>

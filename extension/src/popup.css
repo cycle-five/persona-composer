@@ -1,0 +1,83 @@
+:root {
+  color-scheme: dark;
+}
+body {
+  width: 300px;
+  margin: 0;
+  padding: 14px 16px 16px;
+  background: #15181e;
+  color: #e6e9ef;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+}
+h1 {
+  margin: 0 0 4px;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+.hint,
+.note {
+  color: #8b93a3;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.note {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid #2a2f3a;
+}
+label {
+  display: block;
+  margin: 10px 0 4px;
+  font-size: 11px;
+  color: #8b93a3;
+}
+input {
+  width: 100%;
+  box-sizing: border-box;
+  background: #0f1115;
+  color: #e6e9ef;
+  border: 1px solid #2a2f3a;
+  border-radius: 8px;
+  padding: 7px 9px;
+  font: inherit;
+  font-size: 12px;
+}
+input:focus {
+  outline: none;
+  border-color: #5b9dff;
+}
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+button {
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font: inherit;
+  font-size: 12px;
+  border: 1px solid #2a2f3a;
+}
+button.primary {
+  background: #3a7bd5;
+  border-color: #3a7bd5;
+  color: #fff;
+}
+button.ghost {
+  background: #1d212b;
+  color: #e6e9ef;
+}
+.status {
+  min-height: 1.2em;
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: #8b93a3;
+}
+.status.ok {
+  color: #54d18c;
+}
+.status.error {
+  color: #ff6b6b;
+}
