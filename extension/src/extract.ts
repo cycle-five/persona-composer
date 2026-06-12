@@ -10,9 +10,14 @@ export const TWEET_SELECTOR = 'article[data-testid="tweet"]';
 /** The engagement/action bar within a tweet (reply/retweet/like/…). */
 const ACTION_BAR_SELECTOR = '[role="group"]';
 
-/** X's reply composer (DraftJS contenteditable). _0 is the primary box. */
-const REPLY_BOX_SELECTOR =
-  '[data-testid="tweetTextarea_0"], [role="textbox"][contenteditable="true"]';
+/** X's reply composer (DraftJS contenteditable). The primary tweet box has a
+ *  specific testid; the generic role/contenteditable pair is a last resort.
+ *  Queried in this order (not as one comma-selector, which would return
+ *  whichever matches first in DOM order — possibly a search or DM box). */
+const REPLY_BOX_SELECTORS = [
+  '[data-testid="tweetTextarea_0"]',
+  '[role="textbox"][contenteditable="true"]',
+];
 
 /** Pull author, handle, text, and permalink out of a tweet article. */
 export function extractTweet(article: Element): ExtractedPost {
@@ -50,7 +55,11 @@ export function findActionBar(article: Element): Element | null {
  * model actually picks up. The user still reviews and clicks Post.
  */
 export function insertIntoReply(text: string): boolean {
-  const box = document.querySelector<HTMLElement>(REPLY_BOX_SELECTOR);
+  let box: HTMLElement | null = null;
+  for (const sel of REPLY_BOX_SELECTORS) {
+    box = document.querySelector<HTMLElement>(sel);
+    if (box) break;
+  }
   if (!box) return false;
   box.focus();
   const sel = window.getSelection();

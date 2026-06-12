@@ -75,6 +75,21 @@ export async function registerRoutes(router: Router): Promise<void> {
         typeof body.extraInstruction === "string" ? body.extraInstruction : undefined,
     });
 
+    // If the client hangs up (closes the panel/tab) abort the upstream LLM
+    // stream rather than driving it to completion for output nobody will read.
+    // Note: listen on `res`, not `req` — in modern Node `req`'s "close" fires
+    // when the request *body* finishes being read, not on disconnect. `res`'s
+    // "close" fires on disconnect; guard with writableEnded so our own res.end()
+    // (normal completion) doesn't look like a hang-up.
+    const llmAbort = new AbortController();
+    let clientGone = false;
+    res.on("close", () => {
+      if (!res.writableEnded) {
+        clientGone = true;
+        llmAbort.abort();
+      }
+    });
+
     // Server-Sent Events stream back to the browser.
     res.status(200);
     res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
@@ -84,23 +99,30 @@ export async function registerRoutes(router: Router): Promise<void> {
     res.flushHeaders?.();
 
     const send = (event: string, data: unknown) => {
+      if (clientGone || res.writableEnded) return;
       res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
     };
 
     send("meta", meta);
 
     try {
-      for await (const delta of streamChatCompletion(messages, getLLMConfig())) {
+      for await (const delta of streamChatCompletion(
+        messages,
+        getLLMConfig(),
+        llmAbort.signal,
+      )) {
         send("delta", { text: delta });
       }
       send("done", { ok: true });
     } catch (err) {
-      const message =
-        err instanceof LLMError ? err.message : (err as Error).message;
-      console.error("[persona-composer] compose failed:", message);
-      send("error", { message });
+      if (!clientGone) {
+        const message =
+          err instanceof LLMError ? err.message : (err as Error).message;
+        console.error("[persona-composer] compose failed:", message);
+        send("error", { message });
+      }
     } finally {
-      res.end();
+      if (!res.writableEnded) res.end();
     }
   });
 
