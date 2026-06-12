@@ -82,6 +82,11 @@ async function pipeSSE(
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name !== "compose") return;
 
+  // Closing the panel disconnects the port; abort the upstream stream so the
+  // server (and its LLM) stop generating output nobody will read.
+  const abort = new AbortController();
+  port.onDisconnect.addListener(() => abort.abort());
+
   port.onMessage.addListener(async (msg: ComposeStart) => {
     if (msg.type !== "start") return;
     const { baseUrl } = await getSettings();
@@ -103,6 +108,7 @@ chrome.runtime.onConnect.addListener((port) => {
           sourcePost: msg.sourcePost,
           extraInstruction: msg.extraInstruction,
         }),
+        signal: abort.signal,
       });
       if (!res.ok || !res.body) {
         const detail = await res.text().catch(() => "");
@@ -113,6 +119,7 @@ chrome.runtime.onConnect.addListener((port) => {
       await pipeSSE(res, (event, data) => post({ event, data }));
       port.disconnect();
     } catch (err) {
+      if (abort.signal.aborted) return; // panel closed; nothing to report
       post({
         event: "error",
         data: {
