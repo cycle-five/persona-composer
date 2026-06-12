@@ -20,9 +20,20 @@
     </div>
     <p id="status" class="status"></p>
 
+    <label class="toggle">
+      <input id="autoPost" type="checkbox" />
+      <span>Enable “Post for me” button</span>
+    </label>
+    <p class="warn">
+      ⚠️ Off by default. When on, the panel shows a button that submits the post
+      on your behalf after a confirmation. Auto-posting is squarely against
+      X/Instagram terms and carries real account risk.
+    </p>
+
     <p class="note">
-      Phase 2 reads the X page DOM, which is against the letter of X's terms.
-      Drafts only — nothing is posted for you.
+      This extension reads the page DOM (against the letter of X/IG terms). With
+      auto-post off, nothing is ever posted for you — you copy or insert, then
+      Post yourself.
     </p>
     <script src="popup.js"></script>
   </body>

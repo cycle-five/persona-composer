@@ -182,16 +182,21 @@ npm run dev         # build + start standalone
 
 ---
 
-## Browser extension (Phase 2)
+## Browser extension (Phases 2–3)
 
-A thin Manifest V3 extension adds a 🎭 button to tweets on x.com; it extracts the
-post and drafts a persona-voiced reply by calling the **same** local endpoints —
-no server changes. It only drafts; you still hit Post. Build with
-`npm run build:ext` and load `extension/dist` unpacked. Full instructions and the
-account-safety note in [extension/README.md](extension/README.md).
+A thin Manifest V3 extension adds a 🎭 button to posts on **x.com** and
+**instagram.com**; it extracts the post and drafts a persona-voiced reply by
+calling the **same** local endpoints — no server changes. Site-specific DOM code
+lives behind a small adapter interface (`extension/src/sites/`). Features:
+single-post compose, **feed triage** (scan posts, step through or *Draft all*),
+and an **opt-in, default-off** "Post for me" button. By default it only drafts;
+you still hit Post. Build with `npm run build:ext` and load `extension/dist`
+unpacked. Full instructions and the account-safety note in
+[extension/README.md](extension/README.md).
 
-> ⚠️ Phase 2 reads the X page DOM, which is against the *letter* of X's terms.
-> Phase 1 (above) stays clean. See [docs/PLAN.md](docs/PLAN.md).
+> ⚠️ Phases 2–3 read the page DOM (against the *letter* of X/IG terms); auto-post
+> (off by default) submits on your behalf (real account risk). Phase 1 (above)
+> stays clean. See [docs/PLAN.md](docs/PLAN.md).
 
 ## Contributing
 

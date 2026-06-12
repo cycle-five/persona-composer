@@ -1,22 +1,23 @@
-# persona-composer — browser extension (Phase 2)
+# persona-composer — browser extension (Phases 2–3)
 
-A thin Manifest V3 extension for Chromium browsers. It adds a 🎭 button to each
-tweet on **x.com** / **twitter.com**; clicking it extracts that post and opens a
-panel that streams a persona-voiced reply from your **local persona-composer
-endpoints** (the same `/personas` and `/compose` the Phase 1 server/plugin
-exposes). You pick a persona, it drafts, you **Copy** or **Insert** into the
-reply box and hit Post yourself.
+A thin Manifest V3 extension for Chromium browsers. It adds a 🎭 button to posts
+on **x.com** / **twitter.com** and **instagram.com**; clicking it extracts that
+post and opens a panel that streams a persona-voiced reply from your **local
+persona-composer endpoints** (the same `/personas` and `/compose` the Phase 1
+server/plugin exposes). You pick a persona, it drafts, you **Copy** or **Insert**
+into the reply/comment box and hit Post yourself.
 
-> ⚠️ **Account-safety note.** Reading the X page DOM is against the *letter* of
-> X's terms of service. This extension is local-only and **never posts for you** —
-> it only drafts. Understand the trade-off before using it. See
+> ⚠️ **Account-safety note.** Reading the page DOM is against the *letter* of
+> X's and Instagram's terms of service. By default this extension is local-only
+> and **never posts for you** — it only drafts. The opt-in "Post for me" button
+> (off by default) submits on your behalf, which carries real account risk. See
 > [../docs/PLAN.md](../docs/PLAN.md).
 
 ## How it fits together
 
 ```
 content script ──(message: personas)──▶ background worker ──HTTP──▶ persona-composer
-   (x.com DOM)  ◀─(port: compose SSE)──   (host_permissions)        /personas, /compose
+ (x / instagram) ◀─(port: compose SSE)──   (host_permissions)        /personas, /compose
 ```
 
 All network I/O happens in the **background service worker**, which runs with
@@ -24,10 +25,14 @@ the extension's `host_permissions` — so reaching `http://127.0.0.1` is free of
 the page's CORS / mixed-content restrictions. The server needs **no** changes
 and is reused untouched; prompt assembly stays entirely server-side.
 
-- `src/extract.ts` — the only X-DOM-coupled code (selectors, reply insertion).
-- `src/content.ts` — button injection + the shadow-DOM panel.
+- `src/sites/` — all site-specific DOM coupling, behind a `SiteAdapter` interface
+  (`x.ts`, `instagram.ts`, `index.ts` picks by host). Add a site = add one
+  adapter. **This is the only place to patch when X or IG reshuffles its DOM.**
+- `src/content.ts` — site-agnostic: button injection, the shadow-DOM panel, feed
+  triage, and the opt-in auto-post.
 - `src/background.ts` — fetches personas; streams `/compose` SSE over a port.
-- `src/popup.ts` — settings: the endpoint base URL, with a Test button.
+- `src/popup.ts` — settings: endpoint base URL (with a Test) and the auto-post
+  toggle.
 
 ## Build & load
 
@@ -40,36 +45,54 @@ npm run build:ext          # → extension/dist/   (or: npm run watch:ext)
 
 Then in your browser:
 
-1. Make sure a persona-composer endpoint is running (Phase 1 standalone server
-   or the SillyTavern plugin) — e.g. `npm start` → `http://127.0.0.1:5859`.
+1. Run a persona-composer endpoint (Phase 1 standalone server or the
+   SillyTavern plugin) — e.g. `npm start` → `http://127.0.0.1:5859`.
 2. Open `chrome://extensions` (or `brave://extensions`).
 3. Toggle **Developer mode** on.
 4. **Load unpacked** → select `extension/dist`.
-5. Click the extension's toolbar icon → set the **Endpoint base URL** if it
-   isn't the default `http://127.0.0.1:5859`, hit **Save**, then **Test** to
-   confirm it reaches your personas.
+5. Click the toolbar icon → set the **Endpoint base URL** if it isn't the
+   default `http://127.0.0.1:5859`, **Save**, then **Test**.
 
 > Pointing at a non-localhost endpoint? Add its origin to `host_permissions` in
 > `manifest.json` and rebuild — the defaults only cover `127.0.0.1` / `localhost`.
 
 ## Use
 
-1. Go to x.com. Each tweet's action bar gets a 🎭 button.
-2. Click it → the panel opens with that tweet as the source.
-3. Pick a persona + platform, optionally add a direction, hit **Compose**. The
-   draft streams in and is editable.
-4. **Copy**, or **Insert** to drop it into an open reply box. You hit Post.
+### Single post
+1. On x.com or instagram.com, each post gets a 🎭 button.
+2. Click it → the panel opens with that post as the source. The platform
+   defaults to the site you're on.
+3. Pick a persona, optionally add a direction, hit **Compose**. The draft
+   streams in and is editable.
+4. **Copy**, or **Insert** to drop it into an open reply/comment box. You Post.
+
+### Feed triage (Phase 3)
+- Click **⊞ feed** in the panel header to scan every post currently in view.
+- Step through them with ◀ / ▶ and compose a reply for each, **or**
+- Hit **Draft all** to draft a reply for every scanned post sequentially; the
+  results collect into the draft box (separated by author) for one **Copy**.
+
+### Auto-post (Phase 3 — opt-in, default OFF)
+- In the popup, tick **Enable "Post for me" button**. It's off by default.
+- When on, the panel shows a red **Post for me** button. It inserts the draft
+  into the site's composer, asks you to **confirm**, then clicks the site's own
+  post button.
+- ⚠️ This submits on your behalf, which is squarely against X/IG terms and
+  carries real account risk. Leave it off unless you understand the trade-off.
 
 ## Manual test checklist
 
-The bundles are syntax-checked and typechecked in CI/build, but the X-DOM
-coupling can only be exercised live:
+The bundles are typechecked and the host→adapter routing is unit-tested, but the
+DOM coupling can only be exercised live:
 
 - [ ] Popup **Test** reports `✓ reachable — N persona(s)`.
-- [ ] 🎭 buttons appear on tweets, including ones loaded by scrolling.
+- [ ] 🎭 buttons appear on tweets and IG posts, including ones loaded by scrolling.
 - [ ] Clicking 🎭 fills "Replying to" with the right author + text.
 - [ ] Compose streams a draft; the char counter turns red past the limit.
-- [ ] Copy works; Insert drops text into an open reply composer.
+- [ ] **⊞ feed** scans posts; ◀ / ▶ navigate; **Draft all** drafts each.
+- [ ] Copy works; Insert drops text into an open reply/comment composer.
+- [ ] With auto-post **on**: Post for me inserts, confirms, and submits.
 
-If X changes its DOM and buttons stop appearing or extraction breaks, the fix is
-almost always in `src/extract.ts` (the `data-testid` selectors).
+If extraction breaks after a site redesign, the fix is in `src/sites/<site>.ts`
+(the selectors). Instagram's markup is especially volatile — its adapter is
+best-effort and degrades gracefully (you can still compose standalone posts).

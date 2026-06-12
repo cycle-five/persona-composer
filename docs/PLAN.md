@@ -85,16 +85,27 @@ Delivered (see [../extension/README.md](../extension/README.md)):
 
 ---
 
-## Phase 3 — feed view, Instagram, optional auto-post
+## Phase 3 — feed view, Instagram, optional auto-post  ✅ (`extension/`)
 
 **Risk: highest** (automation / posting on the user's behalf is squarely against
 X/IG terms; opt-in, off by default, clearly fenced).
 
-- A feed view that pulls multiple posts for triage and batch drafting.
-- Instagram support (the platform config and prompt layers already account for
-  it; this is mostly DOM extraction + caption-shaped output).
-- *Optional* auto-post behind an explicit, default-off switch, with loud warnings
-  about account risk.
+Delivered:
+
+- **Site-adapter refactor** — all site-specific DOM coupling now lives behind a
+  `SiteAdapter` interface (`extension/src/sites/`, one file per site, picked by
+  host). The content script is site-agnostic.
+- **Instagram support** — an IG adapter (`sites/instagram.ts`) extracts caption +
+  author and inserts into the comment box (React-controlled, via the native
+  value setter). The manifest now matches instagram.com. IG markup is volatile,
+  so the adapter is best-effort and degrades gracefully. The platform/prompt
+  layers already accounted for Instagram, so no server changes were needed.
+- **Feed triage** — a **⊞ feed** scan collects every post in view; step through
+  with ◀ / ▶ to compose per post, or **Draft all** to draft every post
+  sequentially into one copyable block.
+- **Optional auto-post** — an opt-in, **default-off** setting reveals a fenced
+  "Post for me" button that inserts the draft, requires a confirm, then clicks
+  the site's own post control. Loud warnings about account risk throughout.
 
 ---
 

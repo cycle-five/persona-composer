@@ -81,3 +81,23 @@ button.ghost {
 .status.error {
   color: #ff6b6b;
 }
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 4px;
+  font-size: 12px;
+  color: #e6e9ef;
+  cursor: pointer;
+}
+.toggle input {
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+}
+.warn {
+  margin: 4px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #ff9b9b;
+}
