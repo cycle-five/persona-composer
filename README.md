@@ -182,6 +182,11 @@ npm run dev         # build + start standalone
 
 ---
 
+## Contributing
+
+Changes flow through a lightweight branch → PR → squash-merge cadence. See
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## License
 
 [MIT](LICENSE) © Cycle Five.
