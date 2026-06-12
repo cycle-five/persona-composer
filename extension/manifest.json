@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Persona Composer",
   "version": "0.1.0",
-  "description": "Compose X replies in the voice of your personas, via your local persona-composer endpoints. Drafts only — you still hit Post.",
+  "description": "Compose X/Instagram replies in the voice of your personas, via your local persona-composer endpoints. Drafts only by default — you still hit Post.",
   "permissions": ["storage"],
   "host_permissions": ["http://127.0.0.1/*", "http://localhost/*"],
   "background": {
@@ -14,7 +14,12 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://x.com/*", "https://twitter.com/*"],
+      "matches": [
+        "https://x.com/*",
+        "https://twitter.com/*",
+        "https://www.instagram.com/*",
+        "https://instagram.com/*"
+      ],
       "js": ["content.js"],
       "run_at": "document_idle"
     }
