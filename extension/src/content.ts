@@ -109,43 +109,49 @@ let personasLoaded = false;
 let charLimit = 280;
 let streaming = false;
 
+// Styles live in a constructable stylesheet (adopted below), NOT an inline
+// <style> element. A content-script-injected <style> — even inside a shadow
+// root — is subject to the host page's CSP, and x.com's strict style-src would
+// drop it, leaving the panel unstyled. adoptedStyleSheets is CSSOM, not a
+// <style> element, so CSP doesn't apply.
+const PANEL_CSS = `
+  :host { all: initial; }
+  .wrap {
+    position: fixed; right: 20px; bottom: 20px; width: 360px; z-index: 2147483647;
+    background: #15181e; color: #e6e9ef; border: 1px solid #2a2f3a; border-radius: 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5); overflow: hidden;
+  }
+  header { display:flex; align-items:center; justify-content:space-between;
+    padding: 10px 12px; background:#1b1f27; border-bottom:1px solid #2a2f3a; }
+  header b { font-weight:600; letter-spacing:.02em; }
+  header button { background:none; border:none; color:#8b93a3; cursor:pointer; font-size:16px; }
+  .body { padding: 12px; display:flex; flex-direction:column; gap:8px; }
+  .row { display:flex; gap:8px; }
+  .row > * { flex:1; }
+  label { font-size:11px; color:#8b93a3; display:block; margin-bottom:3px; }
+  select, textarea, input {
+    width:100%; box-sizing:border-box; background:#0f1115; color:#e6e9ef;
+    border:1px solid #2a2f3a; border-radius:8px; padding:6px 8px; font:inherit; font-size:12px; resize:vertical;
+  }
+  select:focus, textarea:focus, input:focus { outline:none; border-color:#5b9dff; }
+  .src { font-size:11px; color:#8b93a3; max-height:64px; overflow:auto;
+    background:#0f1115; border:1px solid #2a2f3a; border-radius:8px; padding:6px 8px; white-space:pre-wrap; }
+  button.act { cursor:pointer; border-radius:8px; padding:6px 12px; font:inherit; font-size:12px; border:1px solid #2a2f3a; }
+  button.primary { background:#3a7bd5; border-color:#3a7bd5; color:#fff; }
+  button.primary:disabled { opacity:.5; cursor:not-allowed; }
+  button.ghost { background:#1d212b; color:#e6e9ef; }
+  button.ghost:disabled { opacity:.5; cursor:not-allowed; }
+  .foot { display:flex; align-items:center; justify-content:space-between; }
+  .count { font-size:11px; color:#8b93a3; }
+  .count.over { color:#ff6b6b; font-weight:bold; }
+  .status { font-size:11px; color:#8b93a3; min-height:1.2em; }
+  .status.error { color:#ff6b6b; }
+  .status.ok { color:#54d18c; }
+  .actions { display:flex; gap:8px; }
+`;
+
 const PANEL_HTML = `
-  <style>
-    :host { all: initial; }
-    .wrap {
-      position: fixed; right: 20px; bottom: 20px; width: 360px; z-index: 2147483647;
-      background: #15181e; color: #e6e9ef; border: 1px solid #2a2f3a; border-radius: 12px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px;
-      box-shadow: 0 12px 40px rgba(0,0,0,.5); overflow: hidden;
-    }
-    header { display:flex; align-items:center; justify-content:space-between;
-      padding: 10px 12px; background:#1b1f27; border-bottom:1px solid #2a2f3a; }
-    header b { font-weight:600; letter-spacing:.02em; }
-    header button { background:none; border:none; color:#8b93a3; cursor:pointer; font-size:16px; }
-    .body { padding: 12px; display:flex; flex-direction:column; gap:8px; }
-    .row { display:flex; gap:8px; }
-    .row > * { flex:1; }
-    label { font-size:11px; color:#8b93a3; display:block; margin-bottom:3px; }
-    select, textarea, input {
-      width:100%; box-sizing:border-box; background:#0f1115; color:#e6e9ef;
-      border:1px solid #2a2f3a; border-radius:8px; padding:6px 8px; font:inherit; font-size:12px; resize:vertical;
-    }
-    select:focus, textarea:focus, input:focus { outline:none; border-color:#5b9dff; }
-    .src { font-size:11px; color:#8b93a3; max-height:64px; overflow:auto;
-      background:#0f1115; border:1px solid #2a2f3a; border-radius:8px; padding:6px 8px; white-space:pre-wrap; }
-    button.act { cursor:pointer; border-radius:8px; padding:6px 12px; font:inherit; font-size:12px; border:1px solid #2a2f3a; }
-    button.primary { background:#3a7bd5; border-color:#3a7bd5; color:#fff; }
-    button.primary:disabled { opacity:.5; cursor:not-allowed; }
-    button.ghost { background:#1d212b; color:#e6e9ef; }
-    button.ghost:disabled { opacity:.5; cursor:not-allowed; }
-    .foot { display:flex; align-items:center; justify-content:space-between; }
-    .count { font-size:11px; color:#8b93a3; }
-    .count.over { color:#ff6b6b; font-weight:bold; }
-    .status { font-size:11px; color:#8b93a3; min-height:1.2em; }
-    .status.error { color:#ff6b6b; }
-    .status.ok { color:#54d18c; }
-    .actions { display:flex; gap:8px; }
-  </style>
   <div class="wrap">
     <header>
       <b>🎭 persona composer</b>
@@ -184,6 +190,9 @@ function buildPanel(): Panel {
   host.id = "persona-composer-panel";
   const shadow = host.attachShadow({ mode: "open" });
   shadow.innerHTML = PANEL_HTML;
+  const sheet = new CSSStyleSheet();
+  sheet.replaceSync(PANEL_CSS);
+  shadow.adoptedStyleSheets = [sheet];
   document.body.appendChild(host);
 
   const q = <T extends Element>(name: string) =>
