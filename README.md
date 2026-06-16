@@ -83,6 +83,12 @@ aren't OpenAI-compatible, point `LLM_BASE_URL` at a LiteLLM or OpenRouter proxy.
 Optional knobs (`LLM_TEMPERATURE`, `LLM_MAX_TOKENS`, `LLM_TIMEOUT_MS`) are
 documented in `.env.example`.
 
+**AWS Bedrock** works with no proxy — it has a native OpenAI-compatible endpoint
+with bearer-token auth. Set `LLM_BASE_URL=https://bedrock-runtime.<region>.amazonaws.com/v1`,
+`LLM_API_KEY` to an [Amazon Bedrock API key](https://docs.aws.amazon.com/bedrock/latest/userguide/api-keys-use.html),
+and `LLM_MODEL` to your model id/inference profile (e.g. `us.anthropic.claude-sonnet-4-6`).
+See `.env.example` for details.
+
 ---
 
 ## Run it
