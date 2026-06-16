@@ -17,8 +17,7 @@ function num(value: string | undefined): number | undefined {
 }
 
 /** Read LLM config fresh from process.env. Read per-request rather than cached
- *  so the operator can change env (e.g. swap models) without a restart when
- *  running standalone, and so the ST plugin always reflects current env. */
+ *  so the operator can change env (e.g. swap models) without a restart. */
 export function getLLMConfig(): LLMConfig {
   const baseUrl = (
     process.env.LLM_BASE_URL || "https://api.openai.com/v1"
@@ -42,7 +41,7 @@ export function getPersonasDir(): string {
   return path.resolve(__dirname, "..", "personas");
 }
 
-/** Port for the standalone dev server (ignored when mounted inside ST). */
+/** Port for the HTTP server. */
 export function getServerPort(): number {
   return num(process.env.PERSONA_COMPOSER_PORT) ?? 5859;
 }

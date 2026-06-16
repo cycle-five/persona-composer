@@ -1,37 +1,44 @@
 # persona-composer — phased plan
 
-A tool to compose social-media posts (X/Twitter, later Instagram) in the voice
-of different AI **personas**. The architecture leans on **SillyTavern (ST)** as
-the persona + LLM backbone, with a thin tool layer on top.
+A tool to compose social-media posts (X/Twitter, Instagram) in the voice of
+different AI **personas**: a small standalone TypeScript HTTP service plus an
+optional browser extension.
 
 The phasing is deliberately ordered by **ToS / account risk**, lowest first.
 
 ---
 
-## Architecture: why SillyTavern as the backbone
+## Architecture
 
-SillyTavern already solves the parts of this problem that are tedious to rebuild:
+A small TypeScript HTTP service owns the whole pipeline: load persona cards →
+assemble a prompt → stream a draft from the configured LLM. The pieces are
+isolated modules (prompt assembly, persona loader, OpenAI-compatible streaming
+client, HTTP routes, one-page UI) so the browser extension can reuse the same
+endpoints. A Rust/axum rewrite of the gateway is a possible *later* optimization,
+explicitly **not** in scope — Phase 1 prioritizes rapid development, so it's all
+TypeScript.
 
-- **Personas as portable artifacts** — the character-card (V2/V3) format is a
-  well-understood JSON schema for "a voice": system prompt, personality,
-  example messages, post-history instructions. We reuse it verbatim and tuck
-  our platform/style config into the card's `extensions.persona_composer` block,
-  so a persona stays a normal, shareable card.
-- **LLM connection management** — ST already brokers OpenAI, local (Ollama /
-  koboldcpp / text-gen-webui), and proxy backends. We piggyback on the same
-  OpenAI-compatible `/chat/completions` denominator.
-- **A server-plugin surface** — ST loads server plugins (Express routers mounted
-  at `/api/plugins/<id>`) that run unsandboxed in its Node process. That is
-  exactly enough to host our two endpoints and a UI, with zero new daemon.
+Two design choices that look like SillyTavern (ST) dependencies but aren't:
 
-The tool layer itself is small and lives in this repo: prompt assembly, the
-persona loader, an OpenAI-compatible streaming client, the HTTP routes, and a
-one-page UI. It can run **inside ST** (as a server-plugin) or **standalone**
-(a localhost Express server) — same routes either way.
+- **Personas are SillyTavern-compatible character cards** (V2/V3) — a
+  well-understood JSON schema for "a voice" (system prompt, personality, example
+  messages, post-history instructions). We keep this format for **interop**: a
+  card authored in ST drops straight into `personas/`. Our per-platform style
+  config lives in the card's `extensions.persona_composer` block. This is a
+  format choice, not a runtime dependency — we parse the JSON ourselves.
+- **An OpenAI-compatible LLM gateway** (`src/llm.ts`) talks `/chat/completions`
+  to OpenAI, Ollama, koboldcpp, text-generation-webui, an Anthropic-compatible
+  proxy, or an aggregator (LiteLLM/OpenRouter) for one endpoint over everything.
 
-A Rust/axum rewrite of the gateway is a possible *later* optimization. It is
-explicitly **not** in scope: Phase 1 prioritizes rapid development, so the whole
-thing is TypeScript.
+> **Why not SillyTavern as a backbone?** An earlier iteration ran as an ST
+> *server-plugin*. In practice it leveraged nothing from ST: we parse cards
+> ourselves and we own the LLM gateway, so the plugin was just an Express router
+> in ST's process (and a source of CSRF friction). ST's provider-connection
+> management lives in its *frontend/session*, reachable only from a *UI*
+> extension — a heavier path that would couple us to ST's browser app — not from
+> a server plugin. Since the OpenAI-compatible gateway already gives us
+> any-provider support, the ST runtime was dropped. The card **format** is the
+> one piece worth keeping, and it has no runtime cost.
 
 ---
 
@@ -43,14 +50,14 @@ result is copied to the clipboard by hand.
 
 Delivered:
 
-1. **ST server-plugin** (`src/plugin.ts`) exporting `init(router)` / `info` /
-   `exit`. Two endpoints (plus helpers):
+1. **HTTP service** (`src/server.ts` + `src/routes.ts`) — endpoints (plus helpers):
    - `POST /compose` — `{ personaId, platform, sourcePost?, extraInstruction? }`
      → assembles the prompt, calls the LLM, **streams** the draft back via SSE.
      With no `sourcePost`, composes a standalone post.
    - `GET /personas` — lists available personas (`id, name, description, …`).
-2. **Persona store** (`src/personas.ts`) — loads ST-compatible V2/V3 character
-   cards from `personas/`. Ships three example personas (Ada, Sol, Glitch).
+   - Binds `127.0.0.1`; serves the UI from the same mount.
+2. **Persona store** (`src/personas.ts`) — loads SillyTavern-compatible V2/V3
+   character cards from `personas/`. Ships three example personas (Ada, Sol, Glitch).
 3. **LLM gateway** (`src/llm.ts`) — a pluggable OpenAI-compatible streaming
    client. Configured by env (`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`).
 4. **One-page web UI** (`public/`) — paste box, persona picker, platform
@@ -58,9 +65,7 @@ Delivered:
    Copy button. Served from the same mount as the API.
 5. **Prompt-assembly module** (`src/promptAssembly.ts`) — the single source of
    truth for prompt shape (persona system prompt + platform rules + source post
-   + task + post-history instructions). Isolated so Phase 2 reuses it unchanged.
-
-A standalone dev server (`src/server.ts`) runs the identical routes without ST.
+   + task + post-history instructions). Isolated so the extension reuses it.
 
 ---
 

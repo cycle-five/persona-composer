@@ -3,9 +3,8 @@ import { registerRoutes } from "./routes";
 import { getServerPort } from "./config";
 
 /**
- * Standalone dev server. Runs the exact same routes the SillyTavern plugin
- * exposes, but mounted at the root and bound to localhost — handy for
- * developing the UI without a running SillyTavern instance.
+ * The persona-composer HTTP service. Mounts the routes at the root and binds to
+ * localhost. This is the canonical way to run the tool.
  *
  *   npm run dev      # build + start
  *   npm start        # start an existing build
@@ -18,7 +17,7 @@ async function main(): Promise<void> {
 
   const port = getServerPort();
   app.listen(port, "127.0.0.1", () => {
-    console.log(`[persona-composer] standalone server on http://127.0.0.1:${port}`);
+    console.log(`[persona-composer] server on http://127.0.0.1:${port}`);
     console.log(`[persona-composer] open http://127.0.0.1:${port}/ for the UI`);
   });
 }

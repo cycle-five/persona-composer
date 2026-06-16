@@ -1,19 +1,22 @@
 # persona-composer
 
-Compose social-media posts (X/Twitter, later Instagram) in the voice of
-different AI **personas**. You paste a post, pick a persona, and the LLM drafts a
-reply in that voice — streamed live, editable, one click to copy.
+Compose social-media posts (X/Twitter, Instagram) in the voice of different AI
+**personas**. You paste a post, pick a persona, and the LLM drafts a reply in
+that voice — streamed live, editable, one click to copy.
 
-Personas are [SillyTavern](https://github.com/SillyTavern/SillyTavern) character
-cards, and the LLM is anything that speaks the OpenAI-compatible
-`/chat/completions` protocol (OpenAI, Ollama, koboldcpp, text-generation-webui,
-or an Anthropic-compatible proxy). The tool ships as a **SillyTavern
-server-plugin**, and also runs **standalone** for development.
+Personas are **SillyTavern-compatible character cards** — a portable JSON schema,
+so you can author them anywhere (including SillyTavern itself) and drop them in
+`personas/`. The LLM is anything that speaks the OpenAI-compatible
+`/chat/completions` protocol: OpenAI, Ollama, koboldcpp, text-generation-webui,
+an Anthropic-compatible proxy, or an aggregator like
+[LiteLLM](https://github.com/BerriAI/litellm) / [OpenRouter](https://openrouter.ai)
+for one endpoint in front of everything. persona-composer itself is a small local
+HTTP service.
 
-> **Phase 1 is this repo.** It uses **no** social-platform API and carries **no**
+> **Phase 1 is the core.** It uses **no** social-platform API and carries **no**
 > account risk: nothing is read from or posted to any platform — you copy and
-> paste. See [docs/PLAN.md](docs/PLAN.md) for the full phased plan and the
-> account-safety note about later phases.
+> paste. The optional [browser extension](extension/README.md) (Phases 2–3) adds
+> DOM-based convenience with documented trade-offs. See [docs/PLAN.md](docs/PLAN.md).
 
 ---
 
@@ -27,14 +30,21 @@ server-plugin**, and also runs **standalone** for development.
 - **`GET /personas`** → the list of available personas.
 - A **one-page UI** to drive it.
 
-### Architecture (the short version)
+### Architecture
 
-SillyTavern is the persona + LLM backbone; this repo is a thin layer on top.
-Personas are character cards (`personas/*.json`); the tool's platform/style
-config lives in each card's `extensions.persona_composer` block. Prompt assembly,
-the persona loader, and the OpenAI-compatible streaming client are small, isolated
-modules so Phase 2 (a browser extension) can reuse them. Full rationale in
-[docs/PLAN.md](docs/PLAN.md).
+A small TypeScript HTTP service: it loads persona character cards from
+`personas/`, assembles a prompt (persona voice + platform rules + source post +
+task), and streams a draft from your configured LLM. Prompt assembly, the
+persona loader, and the OpenAI-compatible streaming client are small, isolated
+modules; the browser extension reuses the same `/personas` and `/compose`
+endpoints. Full rationale in [docs/PLAN.md](docs/PLAN.md).
+
+> **On SillyTavern:** the persona format *is* SillyTavern's character-card schema
+> (V2/V3), so cards interoperate with that ecosystem — but persona-composer does
+> **not** require or run inside SillyTavern. It's a standalone service with its
+> own LLM gateway. (Earlier iterations ran as an ST server-plugin; that was
+> dropped — it added nothing the gateway doesn't already do, and the card format
+> is the only part worth keeping.)
 
 ```
 src/
@@ -44,10 +54,10 @@ src/
   promptAssembly.ts   persona + platform rules + source + task → chat messages
   llm.ts              OpenAI-compatible streaming client
   routes.ts           /compose, /personas, /reload, /healthz + static UI
-  plugin.ts           SillyTavern server-plugin entry (init/info/exit)
-  server.ts           standalone dev server (same routes, mounted at /)
+  server.ts           HTTP server entry (binds 127.0.0.1)
 personas/             example cards: ada, sol, glitch
 public/               the one-page UI (index.html, app.js, styles.css)
+extension/            optional MV3 browser extension (Phases 2–3)
 docs/PLAN.md          phased plan + account-safety note
 ```
 
@@ -68,18 +78,14 @@ cp .env.example .env
 | `LLM_MODEL`     | model name as the endpoint expects     | `gpt-4o-mini`, `llama3.1`    |
 
 Local backends just need their base URL — e.g. Ollama at
-`http://127.0.0.1:11434/v1` with `LLM_API_KEY` blank. Optional knobs
-(`LLM_TEMPERATURE`, `LLM_MAX_TOKENS`, `LLM_TIMEOUT_MS`) are documented in
-`.env.example`.
-
-> When running **inside SillyTavern**, set these in the environment that launches
-> ST — the plugin reads `process.env` at request time.
+`http://127.0.0.1:11434/v1` with `LLM_API_KEY` blank. To reach providers that
+aren't OpenAI-compatible, point `LLM_BASE_URL` at a LiteLLM or OpenRouter proxy.
+Optional knobs (`LLM_TEMPERATURE`, `LLM_MAX_TOKENS`, `LLM_TIMEOUT_MS`) are
+documented in `.env.example`.
 
 ---
 
-## Run it — standalone (fastest path)
-
-No SillyTavern needed; the dev server exposes the identical routes at the root.
+## Run it
 
 ```sh
 npm install
@@ -96,7 +102,8 @@ node --env-file=.env dist/server.js     # Node 20+ supports --env-file
 ```
 
 Open <http://127.0.0.1:5859/>, pick a persona, paste a post (or leave it blank),
-hit **Compose**, edit the draft, **Copy**.
+hit **Compose**, edit the draft, **Copy**. The server binds to `127.0.0.1`, so
+it's reachable only from your machine.
 
 Quick endpoint smoke test:
 
@@ -106,51 +113,6 @@ curl -N -X POST http://127.0.0.1:5859/compose \
   -H 'Content-Type: application/json' \
   -d '{"personaId":"ada","platform":"x","sourcePost":"hot take: tabs > spaces"}'
 ```
-
----
-
-## Run it — as a SillyTavern server-plugin
-
-1. **Enable server plugins** in SillyTavern's `config.yaml`:
-
-   ```yaml
-   enableServerPlugins: true
-   ```
-
-2. **Build and install** the plugin into ST's `plugins/` directory. The plugin
-   needs the compiled `dist/`, the `personas/`, and `public/` dirs together.
-   From this repo:
-
-   ```sh
-   npm install && npm run build
-   ST=/path/to/SillyTavern
-   mkdir -p "$ST/plugins/persona-composer"
-   cp -r dist personas public package.json "$ST/plugins/persona-composer/"
-   ```
-
-   (A symlink works too: `ln -s "$PWD" "$ST/plugins/persona-composer"`.)
-   ST requires `dist/plugin.js` (the package `main`) and mounts its router at
-   `/api/plugins/persona-composer`.
-
-3. **Set the LLM env vars** in the shell/service that starts SillyTavern, then
-   start ST.
-
-4. Open the UI at
-   **`http://<your-ST-host>/api/plugins/persona-composer/`**. The endpoints live
-   at `…/personas` and `…/compose` under the same path (the UI uses relative
-   URLs, so it just works under the plugin mount).
-
-> Want ST itself to broker the model instead of these env vars? Point
-> `LLM_BASE_URL` at ST's own OpenAI-compatible endpoint. The default path keeps
-> the gateway independent so it also works standalone.
-
-> **CSRF:** ST guards every POST with its `csrf-sync` protection. The UI handles
-> this automatically — it fetches ST's `/csrf-token` and sends it as the
-> `X-CSRF-Token` header on `Compose` (the standalone server has no CSRF, so this
-> no-ops there). If you ever see "Invalid CSRF token", just refresh the page.
-> Pointing the **browser extension** at an ST endpoint works the same way, but
-> you must be logged into ST in that browser and have added ST's origin to the
-> extension's `host_permissions` (so the session cookie round-trips).
 
 ---
 
@@ -180,31 +142,29 @@ restart via `POST /reload`. See `personas/ada.json` for a full example.
 
 ---
 
-## Develop
-
-```sh
-npm run typecheck   # tsc --noEmit
-npm run watch       # tsc --watch
-npm run dev         # build + start standalone
-```
-
----
-
 ## Browser extension (Phases 2–3)
 
-A thin Manifest V3 extension adds a 🎭 button to posts on **x.com** and
+An optional Manifest V3 extension adds a 🎭 button to posts on **x.com** and
 **instagram.com**; it extracts the post and drafts a persona-voiced reply by
-calling the **same** local endpoints — no server changes. Site-specific DOM code
-lives behind a small adapter interface (`extension/src/sites/`). Features:
-single-post compose, **feed triage** (scan posts, step through or *Draft all*),
-and an **opt-in, default-off** "Post for me" button. By default it only drafts;
-you still hit Post. Build with `npm run build:ext` and load `extension/dist`
-unpacked. Full instructions and the account-safety note in
-[extension/README.md](extension/README.md).
+calling this service's endpoints. Features: single-post compose, **feed triage**
+(scan posts, step through or *Draft all*), and an **opt-in, default-off** "Post
+for me" button. By default it only drafts; you still hit Post. Build with
+`npm run build:ext` and load `extension/dist` unpacked. Full instructions and the
+account-safety note in [extension/README.md](extension/README.md).
 
 > ⚠️ Phases 2–3 read the page DOM (against the *letter* of X/IG terms); auto-post
 > (off by default) submits on your behalf (real account risk). Phase 1 (above)
 > stays clean. See [docs/PLAN.md](docs/PLAN.md).
+
+---
+
+## Develop
+
+```sh
+npm run typecheck   # tsc --noEmit (server + extension)
+npm run watch       # tsc --watch
+npm run dev         # build + start
+```
 
 ## Contributing
 
