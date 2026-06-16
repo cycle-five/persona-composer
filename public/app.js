@@ -25,24 +25,6 @@ let personas = [];
 let charLimit = 280;
 let streaming = false;
 
-// When served inside SillyTavern, every POST is behind ST's CSRF protection
-// (csrf-sync). ST exposes the token at the origin-root `/csrf-token` and expects
-// it back in the `X-CSRF-Token` header. On the standalone server that endpoint
-// 404s and there's no CSRF, so this gracefully no-ops.
-let csrfToken = null;
-async function getCsrfToken(force = false) {
-  if (csrfToken && !force) return csrfToken;
-  try {
-    const res = await fetch(new URL("/csrf-token", window.location.origin), {
-      credentials: "same-origin",
-    });
-    if (res.ok) csrfToken = (await res.json()).token || null;
-  } catch {
-    // standalone server: no /csrf-token, no CSRF — proceed without a token
-  }
-  return csrfToken;
-}
-
 function setStatus(text, kind = "") {
   els.status.textContent = text;
   els.status.className = "status" + (kind ? " " + kind : "");
@@ -155,24 +137,11 @@ async function compose() {
   };
 
   try {
-    const post = async (token) =>
-      fetch(api("compose"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { "X-CSRF-Token": token } : {}),
-        },
-        credentials: "same-origin",
-        body: JSON.stringify(body),
-      });
-
-    let res = await post(await getCsrfToken());
-    // A 403 likely means a stale CSRF token (e.g. ST session rotated) — refetch
-    // once and retry before giving up.
-    if (res.status === 403) {
-      const fresh = await getCsrfToken(true);
-      if (fresh) res = await post(fresh);
-    }
+    const res = await fetch(api("compose"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
     if (!res.ok || !res.body) {
       const txt = await res.text().catch(() => "");
       throw new Error(`HTTP ${res.status} ${txt}`);

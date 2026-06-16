@@ -20,28 +20,10 @@ function endpoint(base: string, path: string): string {
   return base.replace(/\/+$/, "") + path;
 }
 
-// When the endpoint is a SillyTavern plugin, ST guards every POST with its
-// csrf-sync protection: a token from the origin-root `/csrf-token`, returned in
-// the `X-CSRF-Token` header, bound to the ST session cookie. We fetch with
-// credentials so the session cookie round-trips. On the standalone server this
-// endpoint 404s and there's no CSRF, so it gracefully returns null.
-async function fetchCsrfToken(baseUrl: string): Promise<string | null> {
-  try {
-    const origin = new URL(baseUrl).origin;
-    const res = await fetch(`${origin}/csrf-token`, { credentials: "include" });
-    if (res.ok) return ((await res.json()) as { token?: string }).token ?? null;
-  } catch {
-    // standalone endpoint has no /csrf-token — fine
-  }
-  return null;
-}
-
 async function fetchPersonas(): Promise<PersonasResponse> {
   const { baseUrl } = await getSettings();
   try {
-    const res = await fetch(endpoint(baseUrl, "/personas"), {
-      credentials: "include",
-    });
+    const res = await fetch(endpoint(baseUrl, "/personas"));
     if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
     const data = (await res.json()) as { personas?: PersonaSummary[] };
     return { ok: true, personas: data.personas ?? [] };
@@ -116,31 +98,18 @@ chrome.runtime.onConnect.addListener((port) => {
       }
     };
 
-    const body = JSON.stringify({
-      personaId: msg.personaId,
-      platform: msg.platform,
-      sourcePost: msg.sourcePost,
-      extraInstruction: msg.extraInstruction,
-    });
-    const doPost = (token: string | null) =>
-      fetch(endpoint(baseUrl, "/compose"), {
+    try {
+      const res = await fetch(endpoint(baseUrl, "/compose"), {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { "X-CSRF-Token": token } : {}),
-        },
-        credentials: "include",
-        body,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          personaId: msg.personaId,
+          platform: msg.platform,
+          sourcePost: msg.sourcePost,
+          extraInstruction: msg.extraInstruction,
+        }),
         signal: abort.signal,
       });
-
-    try {
-      let res = await doPost(await fetchCsrfToken(baseUrl));
-      // 403 likely means a stale/absent CSRF token under ST — refetch and retry.
-      if (res.status === 403) {
-        const fresh = await fetchCsrfToken(baseUrl);
-        if (fresh) res = await doPost(fresh);
-      }
       if (!res.ok || !res.body) {
         const detail = await res.text().catch(() => "");
         post({ event: "error", data: { message: `HTTP ${res.status} ${detail}` } });

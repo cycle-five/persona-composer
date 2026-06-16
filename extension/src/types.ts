@@ -22,7 +22,7 @@ export interface ExtractedPost {
 
 /** Persisted settings (chrome.storage.local). */
 export interface Settings {
-  /** Base URL of the persona-composer endpoints (standalone or ST plugin). */
+  /** Base URL of the persona-composer service (default http://127.0.0.1:5859). */
   baseUrl: string;
   lastPersonaId?: string;
   lastPlatform?: Platform;

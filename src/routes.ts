@@ -23,8 +23,7 @@ async function buildStore(): Promise<Store> {
   return { personas, dir };
 }
 
-/** Register the persona-composer routes and static UI onto `router`.
- *  Shared by the SillyTavern plugin and the standalone dev server. */
+/** Register the persona-composer routes and static UI onto `router`. */
 export async function registerRoutes(router: Router): Promise<void> {
   const store = await buildStore();
 
@@ -126,8 +125,8 @@ export async function registerRoutes(router: Router): Promise<void> {
     }
   });
 
-  // Serve the one-page UI from the same mount, so its relative fetches resolve
-  // correctly whether mounted at "/" (standalone) or under ST's plugin path.
+  // Serve the one-page UI from the same mount. It uses relative fetches, so it
+  // resolves correctly regardless of the mount path.
   const publicDir = path.resolve(__dirname, "..", "public");
   router.use(express.static(publicDir));
 }

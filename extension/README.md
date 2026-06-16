@@ -3,8 +3,8 @@
 A thin Manifest V3 extension for Chromium browsers. It adds a 🎭 button to posts
 on **x.com** / **twitter.com** and **instagram.com**; clicking it extracts that
 post and opens a panel that streams a persona-voiced reply from your **local
-persona-composer endpoints** (the same `/personas` and `/compose` the Phase 1
-server/plugin exposes). You pick a persona, it drafts, you **Copy** or **Insert**
+persona-composer service** (the same `/personas` and `/compose` endpoints the
+Phase 1 server exposes). You pick a persona, it drafts, you **Copy** or **Insert**
 into the reply/comment box and hit Post yourself.
 
 > ⚠️ **Account-safety note.** Reading the page DOM is against the *letter* of
@@ -45,8 +45,8 @@ npm run build:ext          # → extension/dist/   (or: npm run watch:ext)
 
 Then in your browser:
 
-1. Run a persona-composer endpoint (Phase 1 standalone server or the
-   SillyTavern plugin) — e.g. `npm start` → `http://127.0.0.1:5859`.
+1. Run the persona-composer service (Phase 1) — e.g. `npm start` →
+   `http://127.0.0.1:5859`.
 2. Open `chrome://extensions` (or `brave://extensions`).
 3. Toggle **Developer mode** on.
 4. **Load unpacked** → select `extension/dist`.
