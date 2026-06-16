@@ -146,6 +146,10 @@ Everything in that block is optional; sensible per-platform defaults fill the
 gaps. `hashtagPolicy` is `none | sparing | liberal`. Hot-reload cards without a
 restart via `POST /reload`. See `personas/ada.json` for a full example.
 
+Your own persona cards stay local: `personas/` is gitignored except the shipped
+example cards, so you can drop real personas in without committing them to this
+public repo.
+
 ---
 
 ## Browser extension (Phases 2–3)

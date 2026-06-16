@@ -19,3 +19,10 @@ npm-debug.log*
 *.swp
 .idea/
 .vscode/
+
+# Persona cards stay local — only the shipped example cards are tracked, so your
+# own personas can live in personas/ without being committed to this public repo.
+/personas/*.json
+!/personas/ada.json
+!/personas/sol.json
+!/personas/glitch.json
