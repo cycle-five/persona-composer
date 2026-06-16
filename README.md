@@ -144,6 +144,14 @@ curl -N -X POST http://127.0.0.1:5859/compose \
 > `LLM_BASE_URL` at ST's own OpenAI-compatible endpoint. The default path keeps
 > the gateway independent so it also works standalone.
 
+> **CSRF:** ST guards every POST with its `csrf-sync` protection. The UI handles
+> this automatically — it fetches ST's `/csrf-token` and sends it as the
+> `X-CSRF-Token` header on `Compose` (the standalone server has no CSRF, so this
+> no-ops there). If you ever see "Invalid CSRF token", just refresh the page.
+> Pointing the **browser extension** at an ST endpoint works the same way, but
+> you must be logged into ST in that browser and have added ST's origin to the
+> extension's `host_permissions` (so the session cookie round-trips).
+
 ---
 
 ## Personas
