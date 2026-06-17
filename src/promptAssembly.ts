@@ -131,19 +131,21 @@ export function assemblePrompt(params: AssembleParams): AssembledPrompt {
     taskLines.push("", `Additional direction: ${extraInstruction.trim()}`);
   }
 
+  // Post-history instructions: ST's final, highest-priority steer. Append it to
+  // the END of the user turn rather than sending it as a trailing `system`
+  // message. A system message placed AFTER the user turn is non-standard, and
+  // some endpoints' chat templating (notably DeepSeek-V3.2 via Bedrock's
+  // OpenAI-compatible endpoint) react by echoing the whole rendered prompt back
+  // instead of replying. Keeping a clean system + user pair avoids that.
+  const phi = card.post_history_instructions?.trim();
+  if (phi) {
+    taskLines.push("", `Above all: ${phi}`);
+  }
+
   const messages: ChatMessage[] = [
     { role: "system", content: systemBlocks.join("\n\n") },
     { role: "user", content: taskLines.join("\n") },
   ];
-
-  // Post-history instructions: the final, highest-priority steer (ST parity).
-  const phi = card.post_history_instructions?.trim();
-  if (phi) {
-    messages.push({
-      role: "system",
-      content: `Remember, above all: ${phi}`,
-    });
-  }
 
   return { messages, meta: { platform, charLimit: cfg.charLimit } };
 }
