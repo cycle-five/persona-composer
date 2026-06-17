@@ -172,6 +172,7 @@ account-safety note in [extension/README.md](extension/README.md).
 
 ```sh
 npm run typecheck   # tsc --noEmit (server + extension)
+npm test            # build + node --test (prompt-assembly regression tests)
 npm run watch       # tsc --watch
 npm run dev         # build + start
 ```

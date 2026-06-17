@@ -15,6 +15,7 @@
     "watch:ext": "node extension/build.mjs --watch",
     "build:all": "npm run build && npm run build:ext",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p extension/tsconfig.json --noEmit",
+    "test": "npm run build && node --test test/*.test.mjs",
     "clean": "rm -rf dist extension/dist"
   },
   "keywords": [
