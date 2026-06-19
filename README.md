@@ -182,6 +182,11 @@ npm run dev         # build + start
 Changes flow through a lightweight branch → PR → squash-merge cadence. See
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Code of conduct
+
+This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md). By
+participating, you're expected to uphold it.
+
 ## License
 
-[MIT](LICENSE) © Cycle Five.
+[MIT](LICENSE) © Cycle Five Syndicate.

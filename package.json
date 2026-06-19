@@ -3,7 +3,15 @@
   "version": "0.1.0",
   "description": "Compose social-media posts in the voice of AI personas, using SillyTavern-compatible character cards and any OpenAI-compatible LLM.",
   "license": "MIT",
-  "author": "Cycle Five",
+  "author": "Cycle Five Syndicate",
+  "homepage": "https://github.com/cycle-five/persona-composer#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cycle-five/persona-composer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cycle-five/persona-composer/issues"
+  },
   "type": "commonjs",
   "main": "dist/server.js",
   "scripts": {
